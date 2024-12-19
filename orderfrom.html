@@ -1,0 +1,39 @@
+async function validateOrder() {
+    const items = Array.from(document.querySelectorAll(".item-entry")).map(entry => {
+        return {
+            item_name: entry.querySelector(".item-name").value,
+            quantity: parseInt(entry.querySelector(".item-quantity").value || 0, 10)
+        };
+    });
+
+    const payload = {
+        customer_name: document.getElementById("customerName").value,
+        customer_phone: document.getElementById("customerPhone").value,
+        customer_email: document.getElementById("customerEmail").value,
+        delivery: document.getElementById("orderType").value === "delivery",
+        delivery_address: document.getElementById("deliveryAddress").value,
+        note: document.getElementById("note").value,
+        items: items
+    };
+
+    const response = await fetch("http://127.0.0.1:5000/validate-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+    });
+
+    const result = await response.json();
+
+    if (result.status === "partial" || result.status === "success") {
+        // Populate customer details
+        document.getElementById("summary-customer-name").textContent = `Name: ${result.customer_details.name}`;
+        document.getElementById("summary-customer-phone").textContent = `Phone: ${result.customer_details.phone}`;
+        document.getElementById("summary-customer-email").textContent = `Email: ${result.customer_details.email}`;
+
+        // Display the order summary
+        updateOrderSummary(); // Ensure this is defined to update the table
+        document.getElementById("order-summary").style.display = "block";
+    } else {
+        alert(result.message);
+    }
+}
