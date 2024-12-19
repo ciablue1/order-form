@@ -1,39 +1,112 @@
-async function validateOrder() {
-    const items = Array.from(document.querySelectorAll(".item-entry")).map(entry => {
-        return {
-            item_name: entry.querySelector(".item-name").value,
-            quantity: parseInt(entry.querySelector(".item-quantity").value || 0, 10)
-        };
-    });
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Form</title>
+</head>
+<body>
+    <h1>Welcome to the Order Form</h1>
 
-    const payload = {
-        customer_name: document.getElementById("customerName").value,
-        customer_phone: document.getElementById("customerPhone").value,
-        customer_email: document.getElementById("customerEmail").value,
-        delivery: document.getElementById("orderType").value === "delivery",
-        delivery_address: document.getElementById("deliveryAddress").value,
-        note: document.getElementById("note").value,
-        items: items
-    };
+    <!-- Order Form -->
+    <form id="orderForm">
+        <label for="customerName">Name:</label>
+        <input type="text" id="customerName" required><br>
 
-    const response = await fetch("http://127.0.0.1:5000/validate-order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-    });
+        <label for="customerPhone">Phone:</label>
+        <input type="text" id="customerPhone" required><br>
 
-    const result = await response.json();
+        <label for="customerEmail">Email:</label>
+        <input type="email" id="customerEmail" required><br>
 
-    if (result.status === "partial" || result.status === "success") {
-        // Populate customer details
-        document.getElementById("summary-customer-name").textContent = `Name: ${result.customer_details.name}`;
-        document.getElementById("summary-customer-phone").textContent = `Phone: ${result.customer_details.phone}`;
-        document.getElementById("summary-customer-email").textContent = `Email: ${result.customer_details.email}`;
+        <label for="orderType">Order Type:</label>
+        <select id="orderType">
+            <option value="pickup">Pickup</option>
+            <option value="delivery">Delivery</option>
+        </select><br>
 
-        // Display the order summary
-        updateOrderSummary(); // Ensure this is defined to update the table
-        document.getElementById("order-summary").style.display = "block";
-    } else {
-        alert(result.message);
-    }
-}
+        <label for="deliveryAddress">Delivery Address:</label>
+        <input type="text" id="deliveryAddress"><br>
+
+        <label for="note">Special Instructions:</label>
+        <textarea id="note"></textarea><br>
+
+        <h3>Items:</h3>
+        <div class="item-entry">
+            <label for="itemName">Item Name:</label>
+            <input class="item-name" type="text" placeholder="Enter item"><br>
+            <label for="itemQuantity">Quantity:</label>
+            <input class="item-quantity" type="number" min="0"><br>
+        </div>
+
+        <button type="button" id="submitButton" onclick="validateOrder()">Submit Order</button>
+    </form>
+
+    <!-- Order Summary -->
+    <div id="order-summary" style="display:none;">
+        <h2>Order Summary</h2>
+        <p id="summary-customer-name"></p>
+        <p id="summary-customer-phone"></p>
+        <p id="summary-customer-email"></p>
+        <!-- Add additional summary details as needed -->
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        async function validateOrder() {
+            const items = Array.from(document.querySelectorAll(".item-entry")).map(entry => {
+                return {
+                    item_name: entry.querySelector(".item-name").value,
+                    quantity: parseInt(entry.querySelector(".item-quantity").value || 0, 10)
+                };
+            });
+
+            const payload = {
+                customer_name: document.getElementById("customerName").value,
+                customer_phone: document.getElementById("customerPhone").value,
+                customer_email: document.getElementById("customerEmail").value,
+                delivery: document.getElementById("orderType").value === "delivery",
+                delivery_address: document.getElementById("deliveryAddress").value,
+                note: document.getElementById("note").value,
+                items: items
+            };
+
+            // Validate required fields
+            if (!payload.customer_name || !payload.customer_phone || !payload.customer_email) {
+                alert("Please fill out all required fields.");
+                return;
+            }
+
+            if (payload.delivery && !payload.delivery_address) {
+                alert("Please provide a delivery address for delivery orders.");
+                return;
+            }
+
+            try {
+                const response = await fetch("/validate-order", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (result.status === "partial" || result.status === "success") {
+                    // Populate customer details
+                    document.getElementById("summary-customer-name").textContent = `Name: ${result.customer_details.name}`;
+                    document.getElementById("summary-customer-phone").textContent = `Phone: ${result.customer_details.phone}`;
+                    document.getElementById("summary-customer-email").textContent = `Email: ${result.customer_details.email}`;
+
+                    // Display the order summary
+                    document.getElementById("order-summary").style.display = "block";
+                } else {
+                    alert(result.message);
+                }
+            } catch (error) {
+                console.error("Error during order validation:", error);
+                alert("Failed to validate the order. Please try again later.");
+            }
+        }
+    </script>
+</body>
+</html>
